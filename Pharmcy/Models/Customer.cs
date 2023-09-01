@@ -22,13 +22,24 @@ namespace Pharmcy.Models
         [Required]
         [StringLength(50)]
         public string c_name { get; set; }
-         
+        public bool ShouldSerializec_name()
+        {
+            return c_name != null;
+        }
         [StringLength(50)]
         public string c_email { get; set; }
+        public bool ShouldSerializec_email()
+        {
+            return c_email != null;
+        }
 
         [StringLength(11)]
         public string c_phone { get; set; }
-       [JsonIgnore]
+        public bool ShouldSerializec_phone()
+        {
+            return c_phone != null;
+        }
+        [JsonIgnore]
         public int? ph_id { get; set; }
         [JsonIgnore]
         public virtual Pharmacist Pharmacist { get; set; }
