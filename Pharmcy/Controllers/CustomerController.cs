@@ -142,7 +142,7 @@ namespace Pharmcy.Controllers
                 comm.Parameters.AddWithValue("@c_email", cust.c_email);
                 er = comm.ExecuteNonQuery();
                 conn.Close();
-                return Request.CreateResponse(HttpStatusCode.OK, "Updated Successfully" + " " + er);
+                return Request.CreateResponse(HttpStatusCode.OK, "Updated Successfully" );
             }
             catch (Exception ex)
             {
@@ -172,7 +172,7 @@ namespace Pharmcy.Controllers
                 comm.Parameters.AddWithValue("@c_id", id);
                 er = comm.ExecuteNonQuery();
                 conn.Close();
-                return Request.CreateResponse(HttpStatusCode.OK, "Deleted Successfully " + er);
+                return Request.CreateResponse(HttpStatusCode.OK, "Deleted "+er+" Row Successfully " );
             }
             catch (Exception ex)
             {
@@ -222,7 +222,7 @@ namespace Pharmcy.Controllers
                 comm.Parameters.AddWithValue("@c_id", id);
                 er = comm.ExecuteNonQuery();
                 conn.Close();
-                return Request.CreateResponse(HttpStatusCode.OK, er);
+                return Request.CreateResponse(HttpStatusCode.OK, "Deleted "+er+" Row Successfully");
             }
             catch (Exception ex)
             {
