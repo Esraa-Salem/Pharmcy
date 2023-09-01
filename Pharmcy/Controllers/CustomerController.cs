@@ -1,12 +1,15 @@
-﻿using Pharmcy.Attributes;
+﻿using Dapper;
+using Pharmcy.Attributes;
 using Pharmcy.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Web;
 using System.Web.Http;
 
 namespace Pharmcy.Controllers
@@ -14,220 +17,176 @@ namespace Pharmcy.Controllers
     public class CustomerController : ApiController
     {
         [HttpGet]
-
-        public async Task<HttpResponseMessage> GetAllCustomers()
+        // GET api/Customers
+        public async Task<HttpResponseMessage> GetAllCustomers([FromUri] int page_number, int limit)
         {
             try
             {
+                var Paramaters = new DynamicParameters();
+                Paramaters.Add("@Page_Number", page_number);
+                Paramaters.Add("@Limit", limit);
 
+                var results = await SingletonSqlConnection.Instance.Connection.QueryMultipleAsync("GetAllCustomers", Paramaters, commandType: CommandType.StoredProcedure);
 
-                SqlConnection conn = new SqlConnection(ConnectionString.constr());
+                IEnumerable<Customer> customers = results.Read<Customer>().ToList();
 
-                string query = "exec sp_executesql @SQL ";
+                HttpContext.Current.Response.Headers.Add("Customers-total-count", results.Read<int>().FirstOrDefault().ToString());
 
-                conn.Open();
-                SqlCommand comm = new SqlCommand(query, conn);
-                comm.Parameters.AddWithValue("@SQL", "GetAllCustomers");
-                SqlDataReader reader = comm.ExecuteReader();
-                List<Customer> cust = new List<Customer>();
-                while (reader.Read())
-                {
-                    cust.Add(new Customer()
-                    {
-                        c_id = int.Parse(reader[0].ToString()),
-                        c_name = reader[1].ToString(),
-                        c_email = reader[2].ToString(),
-                        c_phone = reader[3].ToString()
-                    });
-
-                }
-                conn.Close();
-                return Request.CreateResponse(HttpStatusCode.OK, cust);
+                return Request.CreateResponse(HttpStatusCode.OK, customers);
             }
             catch (Exception ex)
             {
-                return Request.CreateResponse(HttpStatusCode.BadRequest, ex);
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
             }
         }
 
+
         // GET api/<controller>/5
         [HttpGet]
-        public async Task<HttpResponseMessage> GetCustomer(int id)
+        public async Task<HttpResponseMessage> GetCustomer(int c_id)
         {
+
             try
             {
+                var Parameters = new DynamicParameters();
+                Parameters.Add("@c_id", c_id);
 
-                SqlConnection conn = new SqlConnection(ConnectionString.constr());
+                IEnumerable<Customer> customer = await SingletonSqlConnection.Instance.Connection.QueryAsync<Customer>
+                    ("GetCustomer", Parameters, commandType: CommandType.StoredProcedure);
 
-                string query = "EXEC sp_executesql @SQL1 ,@Params1,@c_id";
-                conn.Open();
-                SqlCommand comm = new SqlCommand(query, conn);
-                comm.Parameters.AddWithValue("@SQL1", "GetCustomer @c_id");
-                comm.Parameters.AddWithValue("@Params1", "@c_id int");
-                comm.Parameters.AddWithValue("@c_id", id);
-
-                using (SqlDataReader reader = comm.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        Customer cust = (new Customer()
-                        {
-                            c_id = int.Parse(reader[0].ToString()),
-                            c_name = reader[1].ToString(),
-                            c_email = reader[2].ToString(),
-                            c_phone = reader[3].ToString()
-                        });
-
-                        conn.Close();
-                        return Request.CreateResponse(HttpStatusCode.OK, cust);
-                    }
-                    else
-                    {
-                        return Request.CreateResponse(HttpStatusCode.NotFound);
-                    }
-                }
-
+                return Request.CreateResponse(HttpStatusCode.OK, customer);
             }
             catch (Exception ex)
             {
-                return Request.CreateResponse(HttpStatusCode.BadRequest, ex);
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
             }
+
         }
 
         // POST api/<controller>
         [System.Web.Http.HttpPost]
-        public async Task<HttpResponseMessage> PostCustomer([FromBody] Customer cust)
+        public async Task<HttpResponseMessage> PostCustomer([FromBody] Customer customer)
         {
-            int er = -1;
-            try
-            {
+                try
+                {
+                    var Parameters = new DynamicParameters();
+                    Parameters.Add("@c_name", customer.c_name);
+                    Parameters.Add("@c_phone", customer.c_phone);
+                    Parameters.Add("@c_email", customer.c_email);
 
-                SqlConnection conn = new SqlConnection(ConnectionString.constr());
-                string query = "EXEC sp_executesql @SQL, @Params,@c_name,@c_phone, @c_email ;";
-                conn.Open();
-                SqlCommand comm = new SqlCommand(query, conn);
-                comm.Parameters.AddWithValue("@SQL", "InsertCustomer @c_name,@c_phone,@c_email");
-                comm.Parameters.AddWithValue("@Params", "@c_name varchar(50),@c_phone char(11),@c_email varchar(50)");
-                comm.Parameters.AddWithValue("@c_name", cust.c_name);
-                comm.Parameters.AddWithValue("@c_phone", cust.c_phone);
-                comm.Parameters.AddWithValue("@c_email", cust.c_email);
-                er = comm.ExecuteNonQuery();
-                conn.Close();
-                return Request.CreateResponse(HttpStatusCode.OK, "Inserted " + er + " Row Successfully");
-            }
-            catch (Exception ex)
-            {
-                return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
-            }
+                    IEnumerable <Customer> cust = await SingletonSqlConnection.Instance.Connection.QueryAsync<Customer>(
+                        "InsertCustomer", Parameters, commandType: CommandType.StoredProcedure);
+                    return Request.CreateResponse(HttpStatusCode.Created, "Inserted Successfully");
+                }
+                catch (Exception ex)
+                {
+                    return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
+                }
+            
         }
-
         // PUT api/<controller>/5
         [System.Web.Http.HttpPut]
-        public async Task<HttpResponseMessage> PutCustomer(int id, [FromBody] Customer cust)
+    
+       
+        //under moderating
+        public async Task<HttpResponseMessage> PutCustomer(int c_id, [FromBody] Customer customer)
         {
-            int er = -1;
             try
             {
 
-                SqlConnection conn = new SqlConnection(ConnectionString.constr());
+                var Parmaters = new DynamicParameters();
+                Parmaters.Add("@c_id", c_id);
+                Parmaters.Add("@c_name", customer.c_name);
+                Parmaters.Add("@c_phone", customer.c_phone);
+                Parmaters.Add("@c_email", customer.c_email);
 
-                string query = "EXEC sp_executesql @SQL, @Params,@c_id, @c_name,@c_phone , @c_email";
-                conn.Open();
-                SqlCommand comm = new SqlCommand(query, conn);
-                comm.Parameters.AddWithValue("@SQL", "UpdateCustomer @c_id, @c_name,@c_phone,@c_email");
-                comm.Parameters.AddWithValue("@Params", "@c_id int ,@c_name varchar(50),@c_phone char(11),@c_email varchar(50)");
-                comm.Parameters.AddWithValue("@c_id ", id);
-                comm.Parameters.AddWithValue("@c_name", cust.c_name);
-                comm.Parameters.AddWithValue("@c_phone", cust.c_phone);
-                comm.Parameters.AddWithValue("@c_email", cust.c_email);
-                er = comm.ExecuteNonQuery();
-                conn.Close();
-                return Request.CreateResponse(HttpStatusCode.OK, "Updated Successfully" );
+
+
+                IEnumerable<int> UpdatedCustomer = await SingletonSqlConnection.Instance.Connection.QueryAsync<int>(
+                    "UpdateCustomer", Parmaters, commandType: CommandType.StoredProcedure);
+
+                return Request.CreateResponse(HttpStatusCode.OK, Messages.UpdatedSuccessfully("Customer"));
             }
             catch (Exception ex)
             {
                 return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
             }
         }
+
+
+
+
 
 
 
         // DELETE api/<controller>/5
         [System.Web.Http.HttpPut]
-        public async Task<HttpResponseMessage> DeleteCustomerByIsDeleted(int id)
+        public async Task<HttpResponseMessage> DeleteCustomerByIsDeleted(int c_id)
         {
-            int er = -1;
-
-            try
+            using (SqlTransaction transaction = SingletonSqlConnection.Instance.Connection.BeginTransaction())
             {
-                SqlConnection conn = new SqlConnection(ConnectionString.constr());
-                Customer cust = new Customer();
-                string query;
+                try
+                {
+                    var Parameters = new DynamicParameters();
+                    Parameters.Add("@c_id", c_id);
 
-                query = " EXEC sp_executesql @SQL, @Params,@c_id";
-                conn.Open();
-                SqlCommand comm = new SqlCommand(query, conn);
-                comm.Parameters.AddWithValue("@SQL", "DeleteByIsDeleted @c_id");
-                comm.Parameters.AddWithValue("@Params", "@c_id int");
-                comm.Parameters.AddWithValue("@c_id", id);
-                er = comm.ExecuteNonQuery();
-                conn.Close();
-                return Request.CreateResponse(HttpStatusCode.OK, "Deleted "+er+" Row Successfully " );
-            }
-            catch (Exception ex)
-            {
-                return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
+                    IEnumerable<dynamic> customer = await SingletonSqlConnection.Instance.Connection.QueryAsync<dynamic>(
+                        "DeleteByIsDeleted", Parameters, commandType: CommandType.StoredProcedure, transaction: transaction);
+                    transaction.Commit();
+                    return Request.CreateResponse(HttpStatusCode.OK, Messages.DeletedSuccessfully("Customer"));
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
+                }
             }
         }
+    
+ 
         [System.Web.Http.HttpDelete]
-
-        public async Task<HttpResponseMessage> DeleteCustomerTransaction(int id)
+        public async Task<HttpResponseMessage> DeleteCustomerTransaction(int c_id)
         {
-            try
+            using (SqlTransaction transaction = SingletonSqlConnection.Instance.Connection.BeginTransaction())
             {
+                try
+                {
+                    var Parameters = new DynamicParameters();
+                    Parameters.Add("@c_id", c_id);
 
-                SqlConnection conn = new SqlConnection(ConnectionString.constr());
-                Customer cust = new Customer();
-                string query;
-                query = " EXEC sp_executesql @SQL, @Params,@c_id";
-                conn.Open();
-                SqlCommand comm = new SqlCommand(query, conn);
-                comm.Parameters.AddWithValue("@SQL", "InsertAndDeleteInTransaction @c_id");
-                comm.Parameters.AddWithValue("@Params", "@c_id INT");
-                comm.Parameters.AddWithValue("@c_id", id);
-                conn.Close();
-                return Request.CreateResponse(HttpStatusCode.OK, "Deleted Successfully");
-            }
-            catch (Exception ex)
-            {
-                return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
+                    IEnumerable<dynamic> customer = await SingletonSqlConnection.Instance.Connection.QueryAsync<dynamic>(
+                        "InsertAndDeleteInTransaction", Parameters, commandType: CommandType.StoredProcedure, transaction: transaction);
+                    transaction.Commit();
+                    return Request.CreateResponse(HttpStatusCode.OK, Messages.DeletedSuccessfully("Customer"));
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
+                }
             }
         }
-        [System.Web.Http.HttpDelete]
-
-        public async Task<HttpResponseMessage> DeleteCustomerPermenant(int id)
+        public async Task<HttpResponseMessage> DeleteCustomerPermenant(int c_id)
         {
-            int er = -1;
-            try
+            using (SqlTransaction transaction = SingletonSqlConnection.Instance.Connection.BeginTransaction())
             {
+                try
+                {
+                    var Parameters = new DynamicParameters();
+                    Parameters.Add("@c_id", c_id);
 
-                SqlConnection conn = new SqlConnection(ConnectionString.constr());
-                Customer cust = new Customer();
-                string query;
-                query = "EXEC sp_executesql @SQL, @Params,@c_id";
-                conn.Open();
-                SqlCommand comm = new SqlCommand(query, conn);
-                comm.Parameters.AddWithValue("@SQL", "DeleteCustomer @c_id");
-                comm.Parameters.AddWithValue("@Params", "@c_id int");
-                comm.Parameters.AddWithValue("@c_id", id);
-                er = comm.ExecuteNonQuery();
-                conn.Close();
-                return Request.CreateResponse(HttpStatusCode.OK, "Deleted "+er+" Row Successfully");
-            }
-            catch (Exception ex)
-            {
-                return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
+                    IEnumerable<dynamic> customer = await SingletonSqlConnection.Instance.Connection.QueryAsync<dynamic>(
+                        "DeleteCustomer", Parameters, commandType: CommandType.StoredProcedure, transaction: transaction);
+                    transaction.Commit();
+                    return Request.CreateResponse(HttpStatusCode.OK, Messages.DeletedSuccessfully("Customer"));
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
+                }
             }
         }
+
     }
 }
