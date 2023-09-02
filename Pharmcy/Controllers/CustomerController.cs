@@ -67,27 +67,27 @@ namespace Pharmcy.Controllers
         [System.Web.Http.HttpPost]
         public async Task<HttpResponseMessage> PostCustomer([FromBody] Customer customer)
         {
-                try
-                {
-                    var Parameters = new DynamicParameters();
-                    Parameters.Add("@c_name", customer.c_name);
-                    Parameters.Add("@c_phone", customer.c_phone);
-                    Parameters.Add("@c_email", customer.c_email);
+            try
+            {
+                var Parameters = new DynamicParameters();
+                Parameters.Add("@c_name", customer.c_name);
+                Parameters.Add("@c_phone", customer.c_phone);
+                Parameters.Add("@c_email", customer.c_email);
 
-                    IEnumerable <Customer> cust = await SingletonSqlConnection.Instance.Connection.QueryAsync<Customer>(
-                        "InsertCustomer", Parameters, commandType: CommandType.StoredProcedure);
-                    return Request.CreateResponse(HttpStatusCode.Created, "Inserted Successfully");
-                }
-                catch (Exception ex)
-                {
-                    return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
-                }
-            
+                IEnumerable<int> cust = await SingletonSqlConnection.Instance.Connection.QueryAsync<int>(
+                    "InsertCustomer", Parameters, commandType: CommandType.StoredProcedure);
+                return Request.CreateResponse(HttpStatusCode.Created, "Inserted Successfully");
+            }
+            catch (Exception ex)
+            {
+                return Request.CreateResponse(HttpStatusCode.BadRequest, ex.Message);
+            }
+
         }
         // PUT api/<controller>/5
         [System.Web.Http.HttpPut]
-    
-       
+
+
         //under moderating
         public async Task<HttpResponseMessage> PutCustomer(int c_id, [FromBody] Customer customer)
         {
@@ -142,8 +142,8 @@ namespace Pharmcy.Controllers
                 }
             }
         }
-    
- 
+
+
         [System.Web.Http.HttpDelete]
         public async Task<HttpResponseMessage> DeleteCustomerTransaction(int c_id)
         {
