@@ -1,23 +1,21 @@
-﻿using Dapper;
-using Emergency_IM_Final.attributes;
-using Emergency_IM_Final.Models;
+﻿using Pharmcy.Attributes;
+using Pharmcy.Models;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Web;
 using System.Web.Http;
-using System.Web.UI;
-using System.Web.UI.WebControls.WebParts;
-using System.Web.WebSockets;
+using System.Web.Mvc;
+using Dapper;
+using System.Data;
+using WebGrease.Css.Extensions;
+using System.Web;
+using System.Web.Util;
 
-
-namespace Emergency_IM_Final.Controllers
+namespace Pharmcy.Controllers
 {
 
     public class InventoryController : ApiController
